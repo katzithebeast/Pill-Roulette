@@ -136,8 +136,85 @@ let isDebugMode = false;
 // init();
 // animate();
 
+// Loading tracking
+let modelsToLoad = 15; // Celkový počet modelů/textur k načtení
+let modelsLoaded = 0;
+let isLoadingComplete = false;
+
+// Function to update loading progress
+function updateLoadingProgress(modelName) {
+    modelsLoaded++;
+    const progress = (modelsLoaded / modelsToLoad) * 100;
+    
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    
+    if (loadingBar) {
+        loadingBar.style.width = progress + '%';
+    }
+    if (loadingText) {
+        loadingText.textContent = 'Loading: ' + modelName + '... (' + modelsLoaded + '/' + modelsToLoad + ')';
+    }
+    
+    // Check if all models are loaded
+    if (modelsLoaded >= modelsToLoad && !isLoadingComplete) {
+        isLoadingComplete = true;
+        finishLoading();
+    }
+}
+
+// Function to finish loading and show game
+function finishLoading() {
+    const loadingScreen = document.getElementById('loading-screen');
+    const rendererElement = renderer ? renderer.domElement : null;
+    
+    // Small delay to ensure everything is ready
+    setTimeout(() => {
+        // Hide loading screen
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        
+        // Show renderer
+        if (rendererElement) {
+            rendererElement.style.display = 'block';
+        }
+        
+        // Show game UI
+        if (window.showGameUI) {
+            window.showGameUI();
+        }
+        
+        // Start coin toss if bottle is loaded
+        if (bottleModelData && gameState === STATE.START) {
+            startCoinToss();
+        }
+    }, 100);
+}
+
 // Function to start game from menu
 window.startGame = function() {
+    // Show loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    const rendererElement = renderer ? renderer.domElement : null;
+    
+    if (loadingScreen) {
+        loadingScreen.style.display = 'block';
+    }
+    
+    // Hide renderer until loading is complete
+    if (rendererElement) {
+        rendererElement.style.display = 'none';
+    }
+    
+    // Reset loading state
+    modelsLoaded = 0;
+    isLoadingComplete = false;
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    if (loadingBar) loadingBar.style.width = '0%';
+    if (loadingText) loadingText.textContent = 'Initializing...';
+    
     if (!window.gameInitialized) {
         init();
         window.gameInitialized = true;
@@ -147,11 +224,6 @@ window.startGame = function() {
         window.animationRunning = true;
     }
     gameState = STATE.START;
-    
-    // Show game UI
-    if (window.showGameUI) {
-        window.showGameUI();
-    }
 };
 
 // Function to reset game (for GIVE UP)
@@ -295,6 +367,8 @@ function init() {
     renderer.domElement.style.imageRendering = 'pixelated'; // Pixel-perfect upscaling
     renderer.shadowMap.enabled = false;
     renderer.shadowMap.type = THREE.BasicShadowMap;
+    // Hide renderer initially - will be shown after loading
+    renderer.domElement.style.display = 'none';
     document.body.appendChild(renderer.domElement);
 
     raycaster = new THREE.Raycaster();
@@ -823,18 +897,21 @@ function loadModels() {
 
     // 1. Pill
     loader.load('models/pill/pill.fbx', (obj) => {
-        pillModel = obj; 
+        pillModel = obj;
+        updateLoadingProgress('Pill');
     }, undefined, onError);
     
     // 2. Pill Tablet (OBJ soubor)
     const objLoader = new OBJLoader();
     objLoader.load('models/pilltablet/Pill.obj', (obj) => {
-        pillTabletModel = obj; 
+        pillTabletModel = obj;
+        updateLoadingProgress('Pill Tablet');
     }, undefined, onError);
     
     // 3. Vitamin Pill (OBJ soubor) - pro třetí kolo
     objLoader.load('models/Vitamin pill/16893_Vitamin_pill_v1_NEW.obj', (obj) => {
-        vitaminPillModel = obj; 
+        vitaminPillModel = obj;
+        updateLoadingProgress('Vitamin Pill');
     }, undefined, onError);
 
     // 4. Bottle - Načteme, ale nepřidáme hned do scény
@@ -845,8 +922,7 @@ function loadModels() {
             group.name = "BottleGroup"; 
             
             bottleModelData = { group, boxSize };
-            
-            startCoinToss();
+            updateLoadingProgress('Bottle');
         } catch (e) {
             onError(e);
         }
@@ -982,6 +1058,7 @@ function loadModels() {
             zombieGroup = group;
             zombieGroup.renderOrder = 0; // Nižší priorita než stůl (10) - renderovat před stolem
             scene.add(zombieGroup);
+            updateLoadingProgress('Zombie');
         } catch (e) {
             onError(e);
         }
@@ -1003,6 +1080,7 @@ function loadModels() {
             });
             
             injectorModelData = { group, boxSize };
+            updateLoadingProgress('Injector');
         } catch (e) {
             onError(e);
         }
@@ -1024,6 +1102,7 @@ function loadModels() {
             });
             
             testerModelData = { group, boxSize };
+            updateLoadingProgress('Tester');
         } catch (e) {
             onError(e);
         }
@@ -1045,6 +1124,7 @@ function loadModels() {
             });
             
             pliersModelData = { group, boxSize };
+            updateLoadingProgress('Pliers');
         } catch (e) {
             onError(e);
         }
@@ -1066,6 +1146,7 @@ function loadModels() {
             });
             
             toothModelData = { group, boxSize };
+            updateLoadingProgress('Tooth');
         } catch (e) {
             onError(e);
         }
@@ -1087,6 +1168,7 @@ function loadModels() {
             });
             
             candyModelData = { group, boxSize };
+            updateLoadingProgress('Candy');
         } catch (e) {
             onError(e);
         }
@@ -1134,6 +1216,7 @@ function loadModels() {
             });
             
             brainModelData = { group, boxSize };
+            updateLoadingProgress('Brain');
         } catch (e) {
             onError(e);
         }
@@ -1155,6 +1238,7 @@ function loadModels() {
             });
             
             leechModelData = { group, boxSize };
+            updateLoadingProgress('Leech');
         } catch (e) {
             onError(e);
         }
@@ -1176,6 +1260,7 @@ function loadModels() {
             });
             
             hammerModelData = { group, boxSize };
+            updateLoadingProgress('Hammer');
         } catch (e) {
             onError(e);
         }
@@ -1197,6 +1282,7 @@ function loadModels() {
             });
             
             hearthModelData = { group, boxSize };
+            updateLoadingProgress('Hearth');
         } catch (e) {
             onError(e);
         }
@@ -1209,6 +1295,7 @@ function loadModels() {
         (texture) => {
             // Aplikovat PS1 styl na texturu
             trackerBaseTexture = downscaleTexture(texture, 128);
+            updateLoadingProgress('Tracker Texture');
             
             // Vytvořit trackery po načtení textury
             createTrackers();
@@ -1219,6 +1306,7 @@ function loadModels() {
             console.warn('Tracker.png nenalezen, vytvářím trackery bez základní textury:', err);
             // Nastavit trackerBaseTexture na null - tracker bude fungovat i bez základní textury
             trackerBaseTexture = null;
+            updateLoadingProgress('Tracker Texture');
             
             // Vytvořit trackery i bez základní textury
             createTrackers();
