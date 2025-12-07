@@ -1,0 +1,13 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Skryje posuvníky */
+    background-color: #000;
+}
+
+canvas {
+    display: block; /* Odstraní mezery kolem canvasu */
+    image-rendering: pixelated; /* PS1 HORROR STYL: Pixel-perfect upscaling */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
