@@ -22,6 +22,14 @@ let playerToxicity = 0; // Systém toxikace pro hráče
 let enemyToxicity = 0; // Systém toxikace pro oponenta
 let isBottleOpen = false;
 
+// Statistiky pro game over screen
+let gameStats = {
+    roundsSurvived: 0,
+    pillsEaten: 0,
+    itemsUsed: 0,
+    playerWon: false
+};
+
 // Systém pro itemy
 let injectorToxicityReduction = 0; // Kolik toxifikace se neguje z příští pilulky
 let isTesterActive = false; // Zda je tester aktivní
@@ -30,6 +38,7 @@ let pliersToxicityAdded = 0; // Kolik toxifikace přidaly kleště (pro negaci z
 let isBrainActive = false; // Zda je brain aktivní a čeká na výběr pilulky
 let isCandyActive = false; // Zda je candy aktivní (místo pilulky)
 let isHammerActive = false; // Zda je hammer aktivní a čeká na výběr pilulky k zničení
+let isHearthActive = false; // Zda je hearth aktivní a čeká na použití
 
 // Stav víčka
 const CAP_STATE = {
@@ -238,6 +247,63 @@ window.startGame = function() {
     }, 50);
 };
 
+// Function to restart game (for Play Again)
+window.restartGame = function() {
+    // Hide game over screen
+    hideGameOverScreen();
+    
+    // Reset game state
+    window.resetGame();
+    
+    // Record loading start time
+    loadingStartTime = Date.now();
+    
+    // Show loading screen immediately
+    const loadingScreen = document.getElementById('loading-screen');
+    const rendererElement = renderer ? renderer.domElement : null;
+    
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+    }
+    
+    // Hide renderer until loading is complete
+    if (rendererElement) {
+        rendererElement.style.display = 'none';
+    }
+    
+    // Reset loading state
+    modelsLoaded = 0;
+    isLoadingComplete = false;
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    if (loadingBar) loadingBar.style.width = '0%';
+    if (loadingText) loadingText.textContent = 'Initializing...';
+    
+    // Since models are already loaded (game was running), simulate fast loading
+    // Update progress for all models quickly to show loading animation
+    setTimeout(() => {
+        const modelNames = ['Pill', 'Pill Tablet', 'Vitamin Pill', 'Bottle', 'Zombie', 
+                           'Injector', 'Tester', 'Pliers', 'Tooth', 'Candy', 
+                           'Brain', 'Leech', 'Hammer', 'Hearth', 'Tracker Texture'];
+        
+        let currentModel = 0;
+        const updateInterval = setInterval(() => {
+            if (currentModel < modelNames.length) {
+                updateLoadingProgress(modelNames[currentModel]);
+                currentModel++;
+            } else {
+                clearInterval(updateInterval);
+            }
+        }, 30); // Update every 30ms for smooth progress (total ~450ms)
+    }, 100);
+    
+    // Reset game state to START
+    gameState = STATE.START;
+    
+    // Ensure finishLoading will start the game properly
+    // finishLoading is called automatically when all models are "loaded"
+};
+
 // Function to reset game (for GIVE UP)
 window.resetGame = function() {
     // Reset game state
@@ -248,6 +314,12 @@ window.resetGame = function() {
     enemyToxicity = 0;
     isBottleOpen = false;
     roundNumber = 1;
+    
+    // Reset statistics
+    gameStats.roundsSurvived = 0;
+    gameStats.pillsEaten = 0;
+    gameStats.itemsUsed = 0;
+    gameStats.playerWon = false;
     
     // Reset item states
     injectorToxicityReduction = 0;
@@ -3101,6 +3173,12 @@ function onKeyDown(event) {
 }
 
 function useItem(itemType) {
+    // Track statistics - only count player's items
+    const item = playerItems.find(i => i.type === itemType);
+    if (item) {
+        gameStats.itemsUsed++;
+    }
+    
     switch(itemType) {
         case 'injector':
             useInjector();
@@ -4054,6 +4132,11 @@ function eatPill(meshGroup, isPlayer) {
     const adds2Toxicity = meshGroup.userData.adds2Toxicity || false;
     const addsLife = meshGroup.userData.addsLife || false;
     
+    // Track statistics - only count player's pills
+    if (isPlayer) {
+        gameStats.pillsEaten++;
+    }
+    
     // Odstranit z objectsToUpdate, aby se už neupdatovala přes fyziku
     objectsToUpdate.splice(index, 1);
     // Statistiky se už neaktualizují - zobrazují se všechny pilulky z kola (fixní seznam)
@@ -4456,6 +4539,9 @@ function startNewRound() {
     
     // Zvýšit číslo kola po každém otevření stolu
     roundNumber++;
+    
+    // Update statistics - rounds survived is current round number (before increment it was the completed round)
+    gameStats.roundsSurvived = roundNumber - 1;
     
     // Zobrazit shop před spawnem nové krabičky
     showShop();
@@ -4975,12 +5061,79 @@ function aiOrganizeItems() {
 function checkGameOver() {
     if (playerHP <= 0) {
         gameState = STATE.GAME_OVER;
-        showStatus("ZEMŘEL JSI. KONEC HRY.", true);
+        gameStats.playerWon = false;
+        // Update final round count
+        gameStats.roundsSurvived = roundNumber;
+        showGameOverScreen();
     } else if (enemyHP <= 0) {
         gameState = STATE.GAME_OVER;
-        showStatus("VYHRÁL JSI!", true);
+        gameStats.playerWon = true;
+        // Update final round count
+        gameStats.roundsSurvived = roundNumber;
+        showGameOverScreen();
     }
 }
+
+// Function to show game over screen with statistics
+function showGameOverScreen() {
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const resultText = document.getElementById('game-over-result');
+    const roundsText = document.getElementById('game-over-rounds');
+    const pillsText = document.getElementById('game-over-pills');
+    const itemsText = document.getElementById('game-over-items');
+    
+    if (gameOverScreen) {
+        // Update result text
+        if (resultText) {
+            if (gameStats.playerWon) {
+                resultText.textContent = 'VICTORY!';
+                resultText.style.color = '#00ff00';
+            } else {
+                resultText.textContent = 'DEFEAT';
+                resultText.style.color = '#ff0000';
+            }
+        }
+        
+        // Update statistics
+        if (roundsText) {
+            roundsText.textContent = 'ROUNDS SURVIVED: ' + gameStats.roundsSurvived;
+        }
+        if (pillsText) {
+            pillsText.textContent = 'PILLS EATEN: ' + gameStats.pillsEaten;
+        }
+        if (itemsText) {
+            itemsText.textContent = 'ITEMS USED: ' + gameStats.itemsUsed;
+        }
+        
+        // Show game over screen
+        gameOverScreen.style.display = 'flex';
+    }
+}
+
+// Function to hide game over screen
+function hideGameOverScreen() {
+    const gameOverScreen = document.getElementById('game-over-screen');
+    if (gameOverScreen) {
+        gameOverScreen.style.display = 'none';
+    }
+}
+
+// Expose functions and variables globally for debug buttons
+window.checkGameOver = checkGameOver;
+window.gameStats = gameStats;
+// Create getters/setters for HP variables
+Object.defineProperty(window, 'playerHP', {
+    get: () => playerHP,
+    set: (value) => { playerHP = value; }
+});
+Object.defineProperty(window, 'enemyHP', {
+    get: () => enemyHP,
+    set: (value) => { enemyHP = value; }
+});
+Object.defineProperty(window, 'roundNumber', {
+    get: () => roundNumber,
+    set: (value) => { roundNumber = value; }
+});
 
 function updateUI() {
     // Aktualizovat tracker textury místo HTML elementů

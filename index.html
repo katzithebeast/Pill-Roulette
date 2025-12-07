@@ -474,6 +474,9 @@
             <option value="hearth">HEARTH</option>
         </select>
         <button id="spawn-item-btn" style="padding: 10px 20px; background: rgba(0, 0, 0, 0.95); color: white; border: 2px solid #444; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 10px; cursor: pointer; pointer-events: all; box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);">SPAWN</button>
+        <!-- Debug buttons for testing game over -->
+        <button id="debug-win-btn" style="padding: 10px 20px; background: rgba(0, 100, 0, 0.95); color: white; border: 2px solid #00ff00; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 10px; cursor: pointer; pointer-events: all; box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); margin-top: 5px;">DEBUG: WIN</button>
+        <button id="debug-lose-btn" style="padding: 10px 20px; background: rgba(100, 0, 0, 0.95); color: white; border: 2px solid #ff0000; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 10px; cursor: pointer; pointer-events: all; box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); margin-top: 5px;">DEBUG: LOSE</button>
     </div>
     
     <style>
@@ -514,6 +517,35 @@
             </div>
         </div>
         <!-- CRT efekt na loading screen -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scanline 0.1s linear infinite;"></div>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 100, 0, 0.1); mix-blend-mode: multiply; pointer-events: none;"></div>
+        </div>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 25000; pointer-events: all; background: rgba(0, 0, 0, 0.95);">
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; min-height: 100vh;">
+            <!-- Title -->
+            <div id="game-over-title" style="color: #00ff00; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 24px; text-shadow: 2px 2px 0 #000, 0 0 20px rgba(0, 255, 0, 0.5); margin-bottom: 40px;">
+                GAME OVER
+            </div>
+            
+            <!-- Results -->
+            <div id="game-over-results" style="color: #00ff00; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 14px; text-shadow: 1px 1px 0 #000; text-align: center; margin-bottom: 40px; line-height: 2;">
+                <div id="game-over-result" style="font-size: 18px; margin-bottom: 30px; color: #ff0000;"></div>
+                <div id="game-over-rounds" style="margin-bottom: 15px;"></div>
+                <div id="game-over-pills" style="margin-bottom: 15px;"></div>
+                <div id="game-over-items" style="margin-bottom: 15px;"></div>
+            </div>
+            
+            <!-- Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                <button id="play-again-btn" class="menu-btn" style="min-width: 250px;">PLAY AGAIN</button>
+                <button id="back-to-menu-btn" class="menu-btn" style="min-width: 250px;">BACK TO MENU</button>
+            </div>
+        </div>
+        <!-- CRT efekt na game over screen -->
         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;">
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scanline 0.1s linear infinite;"></div>
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 100, 0, 0.1); mix-blend-mode: multiply; pointer-events: none;"></div>
@@ -790,6 +822,87 @@
                 if (pillStats) pillStats.style.display = 'block';
                 if (playerId) playerId.style.display = 'block';
             };
+            
+            // Game Over Screen buttons
+            const playAgainBtn = document.getElementById('play-again-btn');
+            const backToMenuBtn = document.getElementById('back-to-menu-btn');
+            
+            if (playAgainBtn) {
+                playAgainBtn.addEventListener('click', () => {
+                    // Use restartGame function which shows loading screen and resets game
+                    if (window.restartGame) {
+                        window.restartGame();
+                    } else {
+                        // Fallback to reload if function doesn't exist
+                        window.location.reload();
+                    }
+                });
+            }
+            
+            if (backToMenuBtn) {
+                backToMenuBtn.addEventListener('click', () => {
+                    hideGameOverScreen();
+                    const mainMenu = document.getElementById('main-menu');
+                    if (mainMenu) {
+                        mainMenu.style.display = 'block';
+                    }
+                    // Hide game UI
+                    if (gameUI) gameUI.style.display = 'none';
+                    if (pillStats) pillStats.style.display = 'none';
+                    if (playerId) playerId.style.display = 'none';
+                });
+            }
+            
+            // Debug buttons for testing game over
+            const debugWinBtn = document.getElementById('debug-win-btn');
+            const debugLoseBtn = document.getElementById('debug-lose-btn');
+            
+            if (debugWinBtn) {
+                debugWinBtn.addEventListener('click', () => {
+                    // Set enemy HP to 0 to trigger win
+                    if (window.enemyHP !== undefined) {
+                        window.enemyHP = 0;
+                    }
+                    // Call checkGameOver
+                    if (window.checkGameOver) {
+                        window.checkGameOver();
+                    }
+                });
+            }
+            
+            if (debugLoseBtn) {
+                debugLoseBtn.addEventListener('click', () => {
+                    // Set player HP to 0 to trigger loss
+                    if (window.playerHP !== undefined) {
+                        window.playerHP = 0;
+                    }
+                    // Call checkGameOver
+                    if (window.checkGameOver) {
+                        window.checkGameOver();
+                    }
+                });
+            }
+            
+            // Make hideGameOverScreen accessible
+            window.hideGameOverScreen = function() {
+                const gameOverScreen = document.getElementById('game-over-screen');
+                if (gameOverScreen) {
+                    gameOverScreen.style.display = 'none';
+                }
+            };
+            
+            // Make functions accessible globally
+            window.hideGameOverScreen = function() {
+                const gameOverScreen = document.getElementById('game-over-screen');
+                if (gameOverScreen) {
+                    gameOverScreen.style.display = 'none';
+                }
+            };
+            
+            window.gameStats = window.gameStats || {};
+            window.playerHP = window.playerHP || 5;
+            window.enemyHP = window.enemyHP || 5;
+            window.roundNumber = window.roundNumber || 1;
         });
     </script>
 </body>
