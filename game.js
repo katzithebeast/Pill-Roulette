@@ -200,6 +200,11 @@ function finishLoading() {
             window.showGameUI();
         }
         
+        // Start game ambience audio
+        if (window.playGameAmbienceAudio) {
+            window.playGameAmbienceAudio();
+        }
+        
         // Start coin toss if bottle is loaded
         if (bottleModelData && gameState === STATE.START) {
             startCoinToss();
@@ -330,6 +335,9 @@ window.resetGame = function() {
     isCandyActive = false;
     isHammerActive = false;
     isHearthActive = false;
+    bottleHasLanded = false; // Reset bottle landing state
+    capHasLanded = false; // Reset cap landing state
+    emptyBottleHasLanded = false; // Reset empty bottle landing state
     
     // Clear items
     playerItems.length = 0;
@@ -1451,6 +1459,9 @@ function createTrackers() {
 }
 
 let capConstraint; // Vazba víčka
+let bottleHasLanded = false; // Zda lahev dopadla na stůl
+let capHasLanded = false; // Zda víčko dopadlo na stůl
+let emptyBottleHasLanded = false; // Zda prázdná krabička dopadla na stůl
 
 function spawnBottle() {
     if (!bottleModelData) return;
@@ -1563,6 +1574,9 @@ function spawnBottle() {
     // PILULKY se NESPAWNUJÍ - počkají na otevření lahve
 
     isBottleOpen = false;
+    bottleHasLanded = false; // Resetovat při spawnu nové lahve
+    capHasLanded = false; // Resetovat při spawnu nové lahve
+    emptyBottleHasLanded = false; // Resetovat při spawnu nové lahve
 }
 
 function spawnInjector() {
@@ -2104,6 +2118,11 @@ function spawnPillsFromBottle(bottleBodyRef, r, h) {
             return;
         }
         
+        // Play pill fall sound for each pill
+        if (window.playPillFallSound) {
+            window.playPillFallSound();
+        }
+        
         let isVitaminPill = false;
         let isPillTablet = false;
         let isSpecialPill = false;
@@ -2468,6 +2487,11 @@ function createCoin(pos, quat) {
     
     coinBody.quaternion.copy(q);
     coinBody.addShape(shape);
+    
+    // Play coin sound when coin is tossed
+    if (window.playCoinSound) {
+        window.playCoinSound();
+    }
     
     // Výskok a rotace - VÍCE NÁHODY
     // Rychlost nahoru 4-7, do stran +/- 2
@@ -3038,6 +3062,10 @@ function onMouseUp(event) {
     if (potentialPillGroup && !hasMoved && gameState === STATE.PLAYER_TURN) {
         // Tester mód - testovat pilulku
         if (isTesterActive) {
+            // Play tester sound
+            if (window.playTesterSound) {
+                window.playTesterSound();
+            }
             testedPill = potentialPillGroup;
             isTesterActive = false;
         }
@@ -3049,6 +3077,11 @@ function onMouseUp(event) {
         // Hammer mód - zničit pilulku
         else if (isHammerActive) {
             isHammerActive = false;
+            
+            // Play hammer sound
+            if (window.playHammerSound) {
+                window.playHammerSound();
+            }
             
             // Najít pilulku v objectsToUpdate a odstranit ji
             const pillIndex = objectsToUpdate.findIndex(o => o.mesh === potentialPillGroup || o.mesh === potentialPillGroup.parent);
@@ -3100,6 +3133,11 @@ function onMouseUp(event) {
 function detachCap() {
     if (!bottleBody || !capMesh || isBottleOpen) return;
     isBottleOpen = true;
+
+    // Play bottle open sound
+    if (window.playBottleOpenSound) {
+        window.playBottleOpenSound();
+    }
 
     // 1. Odstranit Shape z bottleBody
     if (bottleBody.userData && bottleBody.userData.capShapeIndex !== undefined) {
@@ -3213,6 +3251,11 @@ function useItem(itemType) {
 function useInjector() {
     if (!injectorGroup || !injectorBody) return;
     
+    // Play injector sound
+    if (window.playInjectorSound) {
+        window.playInjectorSound();
+    }
+    
     // Neguje 2 toxifikace z příští snězené pilulky
     injectorToxicityReduction = 2;
     
@@ -3308,6 +3351,11 @@ function usePliers() {
     if (idx !== -1) objectsToUpdate.splice(idx, 1);
     
     animateItemToMouth(pliersMesh, pliersBodyRef, false, () => {
+        // Play teeth remove sound when pliers disappear
+        if (window.playTeethRemoveSound) {
+            window.playTeethRemoveSound();
+        }
+        
         // Po dokončení animace - přidat oponentovi 1 toxifikaci
         enemyToxicity = Math.min(enemyToxicity + 1, 5);
         pliersToxicityAdded += 1;
@@ -3353,6 +3401,11 @@ function useTooth() {
     if (idx !== -1) objectsToUpdate.splice(idx, 1);
     
     animateItemToMouth(toothMesh, toothBodyRef, true, () => {
+        // Play snap sound when tooth disappears
+        if (window.playSnapSound) {
+            window.playSnapSound();
+        }
+        
         // Po dokončení animace - neguje efekt kleští
         if (pliersToxicityAdded > 0) {
             enemyToxicity = Math.max(0, enemyToxicity - pliersToxicityAdded);
@@ -3406,6 +3459,11 @@ function useHammer() {
 
 function useHearth() {
     if (!hearthGroup || !hearthBody) return;
+    
+    // Play hearth eat sound
+    if (window.playHearthEatSound) {
+        window.playHearthEatSound();
+    }
     
     // Najít hearth v objectsToUpdate
     const itemData = objectsToUpdate.find(o => o.body === hearthBody);
@@ -3494,6 +3552,11 @@ function useCandy() {
 function useBrain() {
     if (!brainGroup || !brainBody) return;
     
+    // Play brain sound
+    if (window.playBrainSound) {
+        window.playBrainSound();
+    }
+    
     // Najít brain v objectsToUpdate
     const itemData = objectsToUpdate.find(o => o.body === brainBody);
     
@@ -3554,6 +3617,11 @@ function useLeech() {
         enemyToxicity = 0;
     }
     updateUI();
+    
+    // Play leech sound after use
+    if (window.playLeechSound) {
+        window.playLeechSound();
+    }
     
     // Odstranit leech ze scény
     scene.remove(leechGroup);
@@ -3735,6 +3803,13 @@ function animateItemToMouth(itemMesh, itemBody, isPlayer, onComplete) {
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
+            // Play lick sound for candy before it disappears
+            if (itemMesh && (itemMesh.name === 'CandyGroup' || (itemMesh.userData && itemMesh.userData.type === 'candy'))) {
+                if (window.playLickSound) {
+                    window.playLickSound();
+                }
+            }
+            
             // Dosáhli jsme úst - odstranit item
             if (itemBody) {
                 world.removeBody(itemBody);
@@ -3851,6 +3926,11 @@ function animatePillToMouth(pillMesh, pillBody, isPlayer, isPoison, isVitaminPil
             }
             if (pillMesh) {
                 scene.remove(pillMesh);
+            }
+            
+            // Play swallow sound when pill disappears
+            if (window.playSwallowSound) {
+                window.playSwallowSound();
             }
             
             // Dramatická napínavá chvilka - hráč čeká, jestli byla pilulka v pořádku
@@ -5269,6 +5349,48 @@ function animate() {
     }
 
     world.step(timeStep, dt, 10); 
+    
+    // Detekce dopadu lahve na stůl
+    if (bottleBody && !bottleHasLanded && !isDragging) {
+        const velocity = bottleBody.velocity;
+        const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+        const positionY = bottleBody.position.y;
+        
+        // Lahev dopadla, pokud je blízko povrchu stolu (Y ≈ 0.5) a rychlost je nízká
+        if (positionY < 1.0 && speed < 0.5) {
+            bottleHasLanded = true;
+            // Play bottle drop sound (only if bottle is not empty)
+            if (!isBottleOpen) {
+                if (window.playBottleDropSound) {
+                    window.playBottleDropSound();
+                }
+            } else {
+                // Play empty sound for empty bottle
+                if (!emptyBottleHasLanded) {
+                    emptyBottleHasLanded = true;
+                    if (window.playEmptySound) {
+                        window.playEmptySound();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Detekce dopadu víčka na stůl
+    if (capBody && !capHasLanded && !isDragging) {
+        const velocity = capBody.velocity;
+        const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+        const positionY = capBody.position.y;
+        
+        // Víčko dopadlo, pokud je blízko povrchu stolu (Y ≈ 0.5) a rychlost je nízká
+        if (positionY < 1.0 && speed < 0.5) {
+            capHasLanded = true;
+            // Play empty sound for cap
+            if (window.playEmptySound) {
+                window.playEmptySound();
+            }
+        }
+    }
     
     // SMOOTH DRAG (Plynulý pohyb myši + Zvedání jen pro lahev)
     if (isDragging && mouseConstraint && mouseConstraint.mouseBody) {

@@ -622,10 +622,99 @@
                     <label style="color: #00ff00;">DEVELOPER MODE:</label>
                     <input type="checkbox" id="dev-mode-toggle" style="width: 30px; height: 30px; cursor: pointer;">
                 </div>
+                <div style="margin-bottom: 30px;">
+                    <label style="color: #00ff00; display: block; margin-bottom: 15px;">MUSIC VOLUME:</label>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <input type="range" id="music-volume-slider" min="0" max="100" value="50" style="flex: 1; height: 8px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none;">
+                        <span id="music-volume-value" style="color: #00ff00; min-width: 50px; text-align: right;">50%</span>
+                    </div>
+                </div>
+                <div style="margin-bottom: 30px;">
+                    <label style="color: #00ff00; display: block; margin-bottom: 15px;">SFX VOLUME:</label>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <input type="range" id="sfx-volume-slider" min="0" max="100" value="50" style="flex: 1; height: 8px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none;">
+                        <span id="sfx-volume-value" style="color: #00ff00; min-width: 50px; text-align: right;">50%</span>
+                    </div>
+                    <style>
+                        #music-volume-slider::-webkit-slider-thumb,
+                        #sfx-volume-slider::-webkit-slider-thumb {
+                            -webkit-appearance: none;
+                            appearance: none;
+                            width: 20px;
+                            height: 20px;
+                            background: #00ff00;
+                            cursor: pointer;
+                            border: 2px solid #000;
+                            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+                        }
+                        #music-volume-slider::-moz-range-thumb,
+                        #sfx-volume-slider::-moz-range-thumb {
+                            width: 20px;
+                            height: 20px;
+                            background: #00ff00;
+                            cursor: pointer;
+                            border: 2px solid #000;
+                            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+                        }
+                    </style>
+                </div>
                 <button class="menu-btn" data-action="back-from-options" style="margin-top: 30px; width: 200px;">BACK</button>
             </div>
         </div>
     </div>
+    
+    <!-- Audio elements -->
+    <audio id="main-menu-audio" loop>
+        <source src="sounds/main_menu.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="game-ambience-audio" loop>
+        <source src="sounds/game_ambience.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="swallow-audio">
+        <source src="sounds/swallow.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bottle-drop-audio">
+        <source src="sounds/bottle_drop.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bottle-open-audio">
+        <source src="sounds/bottle_open.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="pill-fall-audio">
+        <source src="sounds/pill_fall.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hammer-audio">
+        <source src="sounds/hammer.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="tester-audio">
+        <source src="sounds/tester.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="brain-audio">
+        <source src="sounds/brain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="injector-audio">
+        <source src="sounds/injector.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="teeth-remove-audio">
+        <source src="sounds/teeth_remove.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="lick-audio">
+        <source src="sounds/lick.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hearth-eat-audio">
+        <source src="sounds/hearth_eat.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="leech-audio">
+        <source src="sounds/leech.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="snap-audio">
+        <source src="sounds/Snap.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="coin-audio">
+        <source src="sounds/coin.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="empty-audio">
+        <source src="sounds/empty.mp3" type="audio/mpeg">
+    </audio>
     
     <!-- Shop UI -->
     <div id="shop-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; pointer-events: all;">
@@ -710,6 +799,7 @@
                 isGamePaused = false;
                 mainMenu.style.display = 'none';
                 updateMenuButtons();
+                // Don't change audio - game ambience already playing
             }
             
             // Function to give up (reset game)
@@ -728,6 +818,7 @@
                         isGamePaused = true;
                         updateMenuButtons();
                         mainMenu.style.display = 'block';
+                        // Don't change audio - game ambience continues playing
                     }
                     // If menu is visible and game is paused, resume
                     else if (isGamePaused && mainMenu.style.display !== 'none') {
@@ -751,6 +842,10 @@
                         case 'singleplayer':
                             mainMenu.style.display = 'none';
                             isGamePaused = false;
+                            // Fade out main menu audio during loading (will complete during loading time)
+                            if (window.fadeOutMainMenuAudio) {
+                                window.fadeOutMainMenuAudio(1500); // Fade out over 1.5 seconds (matches MIN_LOADING_TIME)
+                            }
                             // Start game
                             if (window.startGame) {
                                 window.startGame();
@@ -790,6 +885,410 @@
                     updateDevModeVisibility();
                 });
             }
+            
+            // Audio elements
+            const mainMenuAudio = document.getElementById('main-menu-audio');
+            const gameAmbienceAudio = document.getElementById('game-ambience-audio');
+            const swallowAudio = document.getElementById('swallow-audio');
+            const bottleDropAudio = document.getElementById('bottle-drop-audio');
+            const bottleOpenAudio = document.getElementById('bottle-open-audio');
+            const pillFallAudio = document.getElementById('pill-fall-audio');
+            const hammerAudio = document.getElementById('hammer-audio');
+            const testerAudio = document.getElementById('tester-audio');
+            const brainAudio = document.getElementById('brain-audio');
+            const injectorAudio = document.getElementById('injector-audio');
+            const teethRemoveAudio = document.getElementById('teeth-remove-audio');
+            const lickAudio = document.getElementById('lick-audio');
+            const hearthEatAudio = document.getElementById('hearth-eat-audio');
+            const leechAudio = document.getElementById('leech-audio');
+            const snapAudio = document.getElementById('snap-audio');
+            const coinAudio = document.getElementById('coin-audio');
+            const emptyAudio = document.getElementById('empty-audio');
+            
+            // Function to play swallow sound
+            window.playSwallowSound = function() {
+                if (swallowAudio) {
+                    // Reset to start and play
+                    swallowAudio.currentTime = 0;
+                    swallowAudio.volume = currentSfxVolume / 100;
+                    swallowAudio.play().catch(err => {
+                        console.log('Swallow audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play bottle drop sound
+            window.playBottleDropSound = function() {
+                if (bottleDropAudio) {
+                    bottleDropAudio.currentTime = 0;
+                    bottleDropAudio.volume = currentSfxVolume / 100;
+                    bottleDropAudio.play().catch(err => {
+                        console.log('Bottle drop audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play bottle open sound
+            window.playBottleOpenSound = function() {
+                if (bottleOpenAudio) {
+                    bottleOpenAudio.currentTime = 0;
+                    bottleOpenAudio.volume = currentSfxVolume / 100;
+                    bottleOpenAudio.play().catch(err => {
+                        console.log('Bottle open audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play pill fall sound
+            window.playPillFallSound = function() {
+                if (pillFallAudio) {
+                    pillFallAudio.currentTime = 0;
+                    pillFallAudio.volume = currentSfxVolume / 100;
+                    pillFallAudio.play().catch(err => {
+                        console.log('Pill fall audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play hammer sound
+            window.playHammerSound = function() {
+                if (hammerAudio) {
+                    hammerAudio.currentTime = 0;
+                    hammerAudio.volume = currentSfxVolume / 100;
+                    hammerAudio.play().catch(err => {
+                        console.log('Hammer audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play tester sound
+            window.playTesterSound = function() {
+                if (testerAudio) {
+                    testerAudio.currentTime = 0;
+                    testerAudio.volume = currentSfxVolume / 100;
+                    testerAudio.play().catch(err => {
+                        console.log('Tester audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play brain sound
+            window.playBrainSound = function() {
+                if (brainAudio) {
+                    brainAudio.currentTime = 0;
+                    brainAudio.volume = currentSfxVolume / 100;
+                    brainAudio.play().catch(err => {
+                        console.log('Brain audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play injector sound
+            window.playInjectorSound = function() {
+                if (injectorAudio) {
+                    injectorAudio.currentTime = 0;
+                    injectorAudio.volume = currentSfxVolume / 100;
+                    injectorAudio.play().catch(err => {
+                        console.log('Injector audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play teeth remove sound
+            window.playTeethRemoveSound = function() {
+                if (teethRemoveAudio) {
+                    teethRemoveAudio.currentTime = 0;
+                    teethRemoveAudio.volume = currentSfxVolume / 100;
+                    teethRemoveAudio.play().catch(err => {
+                        console.log('Teeth remove audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play lick sound
+            window.playLickSound = function() {
+                if (lickAudio) {
+                    lickAudio.currentTime = 0;
+                    lickAudio.volume = currentSfxVolume / 100;
+                    lickAudio.play().catch(err => {
+                        console.log('Lick audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play hearth eat sound
+            window.playHearthEatSound = function() {
+                if (hearthEatAudio) {
+                    hearthEatAudio.currentTime = 0;
+                    hearthEatAudio.volume = currentSfxVolume / 100;
+                    hearthEatAudio.play().catch(err => {
+                        console.log('Hearth eat audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play leech sound
+            window.playLeechSound = function() {
+                if (leechAudio) {
+                    leechAudio.currentTime = 0;
+                    leechAudio.volume = currentSfxVolume / 100;
+                    leechAudio.play().catch(err => {
+                        console.log('Leech audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play snap sound
+            window.playSnapSound = function() {
+                if (snapAudio) {
+                    snapAudio.currentTime = 0;
+                    snapAudio.volume = currentSfxVolume / 100;
+                    snapAudio.play().catch(err => {
+                        console.log('Snap audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play coin sound
+            window.playCoinSound = function() {
+                if (coinAudio) {
+                    coinAudio.currentTime = 0;
+                    coinAudio.volume = currentSfxVolume / 100;
+                    coinAudio.play().catch(err => {
+                        console.log('Coin audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to play empty sound
+            window.playEmptySound = function() {
+                if (emptyAudio) {
+                    emptyAudio.currentTime = 0;
+                    emptyAudio.volume = currentSfxVolume / 100;
+                    emptyAudio.play().catch(err => {
+                        console.log('Empty audio play error:', err);
+                    });
+                }
+            };
+            
+            // Volume sliders
+            const musicVolumeSlider = document.getElementById('music-volume-slider');
+            const musicVolumeValue = document.getElementById('music-volume-value');
+            const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
+            const sfxVolumeValue = document.getElementById('sfx-volume-value');
+            
+            // Load saved volumes (default 50%)
+            let currentMusicVolume = parseFloat(localStorage.getItem('musicVolume')) || 50;
+            let currentSfxVolume = parseFloat(localStorage.getItem('sfxVolume')) || 50;
+            
+            if (musicVolumeSlider) {
+                musicVolumeSlider.value = currentMusicVolume;
+            }
+            if (musicVolumeValue) {
+                musicVolumeValue.textContent = Math.round(currentMusicVolume) + '%';
+            }
+            if (sfxVolumeSlider) {
+                sfxVolumeSlider.value = currentSfxVolume;
+            }
+            if (sfxVolumeValue) {
+                sfxVolumeValue.textContent = Math.round(currentSfxVolume) + '%';
+            }
+            
+            // Apply music volume to music audio elements
+            function updateMusicVolume(volume) {
+                const volumeDecimal = volume / 100;
+                if (mainMenuAudio) {
+                    mainMenuAudio.volume = volumeDecimal;
+                }
+                if (gameAmbienceAudio) {
+                    gameAmbienceAudio.volume = volumeDecimal;
+                }
+                localStorage.setItem('musicVolume', volume);
+                currentMusicVolume = volume;
+            }
+            
+            // Apply SFX volume to sound effect audio elements
+            function updateSfxVolume(volume) {
+                const volumeDecimal = volume / 100;
+                if (swallowAudio) {
+                    swallowAudio.volume = volumeDecimal;
+                }
+                if (bottleDropAudio) {
+                    bottleDropAudio.volume = volumeDecimal;
+                }
+                if (bottleOpenAudio) {
+                    bottleOpenAudio.volume = volumeDecimal;
+                }
+                if (pillFallAudio) {
+                    pillFallAudio.volume = volumeDecimal;
+                }
+                if (hammerAudio) {
+                    hammerAudio.volume = volumeDecimal;
+                }
+                if (testerAudio) {
+                    testerAudio.volume = volumeDecimal;
+                }
+                if (brainAudio) {
+                    brainAudio.volume = volumeDecimal;
+                }
+                if (injectorAudio) {
+                    injectorAudio.volume = volumeDecimal;
+                }
+                if (teethRemoveAudio) {
+                    teethRemoveAudio.volume = volumeDecimal;
+                }
+                if (lickAudio) {
+                    lickAudio.volume = volumeDecimal;
+                }
+                if (hearthEatAudio) {
+                    hearthEatAudio.volume = volumeDecimal;
+                }
+                if (leechAudio) {
+                    leechAudio.volume = volumeDecimal;
+                }
+                if (snapAudio) {
+                    snapAudio.volume = volumeDecimal;
+                }
+                if (coinAudio) {
+                    coinAudio.volume = volumeDecimal;
+                }
+                if (emptyAudio) {
+                    emptyAudio.volume = volumeDecimal;
+                }
+                localStorage.setItem('sfxVolume', volume);
+                currentSfxVolume = volume;
+            }
+            
+            // Initialize volumes
+            updateMusicVolume(currentMusicVolume);
+            updateSfxVolume(currentSfxVolume);
+            
+            // Music volume slider event listener
+            if (musicVolumeSlider) {
+                musicVolumeSlider.addEventListener('input', (e) => {
+                    const newVolume = parseFloat(e.target.value);
+                    if (musicVolumeValue) {
+                        musicVolumeValue.textContent = Math.round(newVolume) + '%';
+                    }
+                    updateMusicVolume(newVolume);
+                });
+            }
+            
+            // SFX volume slider event listener
+            if (sfxVolumeSlider) {
+                sfxVolumeSlider.addEventListener('input', (e) => {
+                    const newVolume = parseFloat(e.target.value);
+                    if (sfxVolumeValue) {
+                        sfxVolumeValue.textContent = Math.round(newVolume) + '%';
+                    }
+                    updateSfxVolume(newVolume);
+                });
+            }
+            
+            // Start main menu audio when page loads
+            if (mainMenuAudio) {
+                mainMenuAudio.play().catch(err => {
+                    console.log('Audio autoplay prevented:', err);
+                });
+            }
+            
+            // Function to fade out audio
+            function fadeOutAudio(audioElement, duration, onComplete) {
+                if (!audioElement) {
+                    if (onComplete) onComplete();
+                    return;
+                }
+                
+                const startVolume = audioElement.volume;
+                const startTime = Date.now();
+                
+                function fade() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    audioElement.volume = startVolume * (1 - progress);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(fade);
+                    } else {
+                        audioElement.pause();
+                        audioElement.currentTime = 0;
+                        // Reset volume to current music volume for next time
+                        audioElement.volume = currentMusicVolume / 100;
+                        if (onComplete) onComplete();
+                    }
+                }
+                
+                fade();
+            }
+            
+            // Function to play main menu audio
+            window.playMainMenuAudio = function() {
+                if (gameAmbienceAudio) {
+                    gameAmbienceAudio.pause();
+                    gameAmbienceAudio.currentTime = 0;
+                }
+                if (mainMenuAudio) {
+                    mainMenuAudio.volume = currentMusicVolume / 100; // Set music volume before playing
+                    mainMenuAudio.play().catch(err => {
+                        console.log('Main menu audio play error:', err);
+                    });
+                }
+            };
+            
+            // Function to fade in audio
+            function fadeInAudio(audioElement, duration, targetVolume) {
+                if (!audioElement) return;
+                
+                audioElement.volume = 0;
+                const startTime = Date.now();
+                
+                function fade() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    audioElement.volume = targetVolume * progress;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(fade);
+                    }
+                }
+                
+                fade();
+            }
+            
+            // Function to play game ambience audio with fade in
+            window.playGameAmbienceAudio = function() {
+                if (mainMenuAudio) {
+                    mainMenuAudio.pause();
+                    mainMenuAudio.currentTime = 0;
+                }
+                if (gameAmbienceAudio) {
+                    gameAmbienceAudio.volume = 0; // Start at 0 for fade in
+                    gameAmbienceAudio.play().catch(err => {
+                        console.log('Game ambience audio play error:', err);
+                    });
+                    // Fade in over 1 second with music volume
+                    fadeInAudio(gameAmbienceAudio, 1000, currentMusicVolume / 100);
+                }
+            };
+            
+            // Function to fade out main menu audio during loading
+            window.fadeOutMainMenuAudio = function(duration = 1500) {
+                fadeOutAudio(mainMenuAudio, duration);
+            };
+            
+            // Stop all audio
+            window.stopAllAudio = function() {
+                if (mainMenuAudio) {
+                    mainMenuAudio.pause();
+                    mainMenuAudio.currentTime = 0;
+                }
+                if (gameAmbienceAudio) {
+                    gameAmbienceAudio.pause();
+                    gameAmbienceAudio.currentTime = 0;
+                }
+            };
             
             function updateDevModeVisibility() {
                 if (spawnControls) {
@@ -845,6 +1344,10 @@
                     const mainMenu = document.getElementById('main-menu');
                     if (mainMenu) {
                         mainMenu.style.display = 'block';
+                    }
+                    // Stop game ambience and play main menu audio
+                    if (window.playMainMenuAudio) {
+                        window.playMainMenuAudio();
                     }
                     // Hide game UI
                     if (gameUI) gameUI.style.display = 'none';
