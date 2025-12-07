@@ -63,7 +63,7 @@ let shopScene, shopCamera, shopRenderer; // Shop 3D scéna
 let raycaster, mouse;
 let bottleBody, bottleGroup;
 let capBody, capMesh; 
-let coinBody, coinMesh;
+let coinBody, coinMesh; 
 let injectorBody, injectorGroup;
 let testerBody, testerGroup;
 let pliersBody, pliersGroup;
@@ -241,11 +241,11 @@ window.startGame = function() {
     // Small delay to ensure loading screen is visible before starting init
     setTimeout(() => {
         if (!window.gameInitialized) {
-            init();
+init();
             window.gameInitialized = true;
         }
         if (!window.animationRunning) {
-            animate();
+animate();
             window.animationRunning = true;
         }
         gameState = STATE.START;
@@ -989,20 +989,20 @@ function loadModels() {
 
     // 1. Pill
     loader.load('models/pill/pill.fbx', (obj) => {
-        pillModel = obj;
+        pillModel = obj; 
         updateLoadingProgress('Pill');
     }, undefined, onError);
     
     // 2. Pill Tablet (OBJ soubor)
     const objLoader = new OBJLoader();
     objLoader.load('models/pilltablet/Pill.obj', (obj) => {
-        pillTabletModel = obj;
+        pillTabletModel = obj; 
         updateLoadingProgress('Pill Tablet');
     }, undefined, onError);
     
     // 3. Vitamin Pill (OBJ soubor) - pro třetí kolo
     objLoader.load('models/Vitamin pill/16893_Vitamin_pill_v1_NEW.obj', (obj) => {
-        vitaminPillModel = obj;
+        vitaminPillModel = obj; 
         updateLoadingProgress('Vitamin Pill');
     }, undefined, onError);
 
@@ -1155,7 +1155,7 @@ function loadModels() {
             onError(e);
         }
     }, undefined, onError);
-
+    
     // 6. Injector - Načteme, ale nepřidáme hned do scény
     loader.load('models/injector/Morhpine Auto Injector.fbx', (obj) => {
         try {
@@ -2852,11 +2852,11 @@ function onMouseMove(event) {
         }
     }
 
-        if (isDragging && mouseConstraint) {
-            // Při dragu zobrazit grabbing kurzor
+    if (isDragging && mouseConstraint) {
+        // Při dragu zobrazit grabbing kurzor
             if (draggingObject === 'pill' || draggingObject === 'injector' || draggingObject === 'tester' || draggingObject === 'pliers' || draggingObject === 'tooth' || draggingObject === 'candy' || draggingObject === 'brain' || draggingObject === 'leech' || draggingObject === 'hammer') {
-                document.body.style.cursor = 'grabbing';
-            }
+            document.body.style.cursor = 'grabbing';
+        }
         // Drag logika: pohybujeme bodem v prostoru
         raycaster.setFromCamera(mouse, camera);
         
@@ -3111,7 +3111,7 @@ function onMouseUp(event) {
         }
         // Normální režim - sníst pilulku
         else {
-            eatPill(potentialPillGroup, true);
+        eatPill(potentialPillGroup, true);
         }
     }
     
@@ -3251,21 +3251,19 @@ function useItem(itemType) {
 function useInjector() {
     if (!injectorGroup || !injectorBody) return;
     
-    // Play injector sound
-    if (window.playInjectorSound) {
-        window.playInjectorSound();
+    // Najít injector v objectsToUpdate
+    const itemData = objectsToUpdate.find(o => o.body === injectorBody);
+    
+    // Pokud je to shop item, zkontrolovat vlastníka
+    if (itemData && itemData.isShopItem) {
+        const isPlayer = itemData.owner === 'player';
+        if (gameState === STATE.PLAYER_TURN && !isPlayer) return;
+        if (gameState === STATE.ENEMY_TURN && isPlayer) return;
+        
+        // Odstranit z playerItems
+        const playerIdx = playerItems.findIndex(i => i.body === injectorBody);
+        if (playerIdx !== -1) playerItems.splice(playerIdx, 1);
     }
-    
-    // Neguje 2 toxifikace z příští snězené pilulky
-    injectorToxicityReduction = 2;
-    
-    // Odstranit injector ze scény
-    scene.remove(injectorGroup);
-    world.removeBody(injectorBody);
-    const idx = objectsToUpdate.findIndex(o => o.body === injectorBody);
-    if (idx !== -1) objectsToUpdate.splice(idx, 1);
-    injectorGroup = null;
-    injectorBody = null;
     
     // Ukončit drag
     if (mouseConstraint) {
@@ -3275,6 +3273,28 @@ function useInjector() {
     }
     isDragging = false;
     draggingObject = null;
+    
+    // Animovat injector k hrudníku
+    const injectorMesh = injectorGroup;
+    const injectorBodyRef = injectorBody;
+    const isPlayer = gameState === STATE.PLAYER_TURN;
+    
+    // Odstranit z objectsToUpdate
+    const idx = objectsToUpdate.findIndex(o => o.body === injectorBody);
+    if (idx !== -1) objectsToUpdate.splice(idx, 1);
+    
+    animateItemToChest(injectorMesh, injectorBodyRef, isPlayer, () => {
+        // Play injector sound when model disappears
+        if (window.playInjectorSound) {
+            window.playInjectorSound();
+        }
+        
+        // Po dokončení animace - neguje 2 toxifikace z příští snězené pilulky
+        injectorToxicityReduction = 2;
+        
+        injectorGroup = null;
+        injectorBody = null;
+    });
 }
 
 function useTester() {
@@ -3460,11 +3480,6 @@ function useHammer() {
 function useHearth() {
     if (!hearthGroup || !hearthBody) return;
     
-    // Play hearth eat sound
-    if (window.playHearthEatSound) {
-        window.playHearthEatSound();
-    }
-    
     // Najít hearth v objectsToUpdate
     const itemData = objectsToUpdate.find(o => o.body === hearthBody);
     
@@ -3479,23 +3494,6 @@ function useHearth() {
         if (playerIdx !== -1) playerItems.splice(playerIdx, 1);
     }
     
-    // Přidat 1 život tomu, kdo použil hearth
-    if (gameState === STATE.PLAYER_TURN) {
-        playerHP = Math.min(playerHP + 1, 5); // Max 5 životů
-    } else if (gameState === STATE.ENEMY_TURN) {
-        enemyHP = Math.min(enemyHP + 1, 5); // Max 5 životů
-    }
-    updateUI();
-    
-    // Odstranit hearth ze scény
-    scene.remove(hearthGroup);
-    world.removeBody(hearthBody);
-    const idx = objectsToUpdate.findIndex(o => o.body === hearthBody);
-    if (idx !== -1) objectsToUpdate.splice(idx, 1);
-    
-    hearthGroup = null;
-    hearthBody = null;
-    
     // Ukončit drag
     if (mouseConstraint) {
         world.removeConstraint(mouseConstraint);
@@ -3504,6 +3502,33 @@ function useHearth() {
     }
     isDragging = false;
     draggingObject = null;
+    
+    // Animovat hearth k hrudníku
+    const hearthMesh = hearthGroup;
+    const hearthBodyRef = hearthBody;
+    const isPlayer = gameState === STATE.PLAYER_TURN;
+    
+    // Odstranit z objectsToUpdate
+    const idx = objectsToUpdate.findIndex(o => o.body === hearthBody);
+    if (idx !== -1) objectsToUpdate.splice(idx, 1);
+    
+    animateItemToChest(hearthMesh, hearthBodyRef, isPlayer, () => {
+        // Play hearth eat sound when model disappears
+        if (window.playHearthEatSound) {
+            window.playHearthEatSound();
+        }
+        
+        // Po dokončení animace - přidat 1 život tomu, kdo použil hearth
+        if (gameState === STATE.PLAYER_TURN) {
+            playerHP = Math.min(playerHP + 1, 5); // Max 5 životů
+        } else if (gameState === STATE.ENEMY_TURN) {
+            enemyHP = Math.min(enemyHP + 1, 5); // Max 5 životů
+        }
+        updateUI();
+        
+        hearthGroup = null;
+        hearthBody = null;
+    });
 }
 
 function useCandy() {
@@ -3610,28 +3635,6 @@ function useLeech() {
         if (playerIdx !== -1) playerItems.splice(playerIdx, 1);
     }
     
-    // Snížit toxikaci na minimum (0)
-    if (gameState === STATE.PLAYER_TURN) {
-        playerToxicity = 0;
-    } else if (gameState === STATE.ENEMY_TURN) {
-        enemyToxicity = 0;
-    }
-    updateUI();
-    
-    // Play leech sound after use
-    if (window.playLeechSound) {
-        window.playLeechSound();
-    }
-    
-    // Odstranit leech ze scény
-    scene.remove(leechGroup);
-    world.removeBody(leechBody);
-    const idx = objectsToUpdate.findIndex(o => o.body === leechBody);
-    if (idx !== -1) objectsToUpdate.splice(idx, 1);
-    
-    leechGroup = null;
-    leechBody = null;
-    
     // Ukončit drag
     if (mouseConstraint) {
         world.removeConstraint(mouseConstraint);
@@ -3640,6 +3643,33 @@ function useLeech() {
     }
     isDragging = false;
     draggingObject = null;
+    
+    // Animovat leech k hrudníku
+    const leechMesh = leechGroup;
+    const leechBodyRef = leechBody;
+    const isPlayer = gameState === STATE.PLAYER_TURN;
+    
+    // Odstranit z objectsToUpdate
+    const idx = objectsToUpdate.findIndex(o => o.body === leechBody);
+    if (idx !== -1) objectsToUpdate.splice(idx, 1);
+    
+    animateItemToChest(leechMesh, leechBodyRef, isPlayer, () => {
+        // Po dokončení animace - snížit toxikaci na minimum (0)
+        if (gameState === STATE.PLAYER_TURN) {
+            playerToxicity = 0;
+        } else if (gameState === STATE.ENEMY_TURN) {
+            enemyToxicity = 0;
+        }
+        updateUI();
+        
+        // Play leech sound after use
+        if (window.playLeechSound) {
+            window.playLeechSound();
+        }
+        
+        leechGroup = null;
+        leechBody = null;
+    });
 }
 
 function startPlayerTurn() {
@@ -3750,6 +3780,114 @@ function getMouthPosition(isPlayer) {
             zombieDebugPos.z + forwardZ // Dopředu před pusu
         );
     }
+}
+
+// Pomocná funkce pro výpočet pozice hrudníku (nižší než ústa)
+function getChestPosition(isPlayer) {
+    // Pozice "hrudníku" - podobně jako ústa, ale nižší
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    
+    // Hruď je velmi blízko kamery (0.6 jednotek), ale nižší než ústa (ústa jsou -0.5, hruď je -1.2)
+    const chestOffset = new THREE.Vector3(
+        cameraDirection.x * 0.6,  // 0.6 jednotek před kamerou (velmi blízko)
+        -1.2,  // 1.2 jednotky dolů od kamery (hrudník pod ústy)
+        cameraDirection.z * 0.6
+    );
+    const chestPosition = camera.position.clone().add(chestOffset);
+    
+    // Pro AI použijeme pozici na hrudi zombie
+    if (isPlayer) {
+        return chestPosition;
+    } else {
+        // Pozice hrudníku zombie - před jeho tělem, nižší než ústa
+        // Zombie je na zombieDebugPos, rotace je zombieDebugRot, scale je zombieDebugScale
+        
+        // Výška hrudníku od základny zombie (nižší než ústa)
+        const mouthHeight = enemyMouthHeight * zombieDebugScale; // Výška úst
+        const chestHeight = mouthHeight - 0.5 * zombieDebugScale; // Hruď je 0.5 jednotek níž než ústa
+        
+        // Směr před zombie podle rotace Y (horizontální směr, kam zombie kouká)
+        const forwardDistance = 0.5 * zombieDebugScale; // Vzdálenost před zombie
+        const forwardX = Math.sin(zombieDebugRot.y) * forwardDistance;
+        const forwardZ = Math.cos(zombieDebugRot.y) * forwardDistance;
+        
+        // Pozice hrudníku: pozice zombie + offset nahoru (hrudník) + offset dopředu
+        return new THREE.Vector3(
+            zombieDebugPos.x + forwardX,
+            zombieDebugPos.y + chestHeight, // Hruď nižší než ústa
+            zombieDebugPos.z + forwardZ // Dopředu před zombie
+        );
+    }
+}
+
+// Funkce pro animaci itemu k hrudníku (nižší než ústa)
+function animateItemToChest(itemMesh, itemBody, isPlayer, onComplete) {
+    const targetChestPos = getChestPosition(isPlayer);
+    const startPos = itemMesh.position.clone();
+    const startRot = itemMesh.rotation.clone();
+    const targetPos = targetChestPos;
+    const duration = 1200; // Fixní 1.2 sekundy pro plynulost
+    const startTime = performance.now();
+    
+    // Odpojit fyziku - item letí ručně (STATICKÁ, bez rotace)
+    if (itemBody) {
+        itemBody.type = CANNON.Body.KINEMATIC;
+        itemBody.velocity.set(0,0,0);
+        itemBody.angularVelocity.set(0,0,0);
+    }
+    
+    // Zastavit rotaci itemu - bude statická
+    if (itemMesh) {
+        itemMesh.rotation.copy(startRot);
+    }
+    
+    function animate() {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Plynulý easing (ease-in-out cubic)
+        const eased = progress < 0.5 
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        
+        // Interpolace pozice
+        const currentPos = startPos.clone().lerp(targetPos, eased);
+        
+        // Zmenšování itemu (efekt použití)
+        const scale = 1 - eased * 0.7; // Zmenší se na 30% původní velikosti
+        
+        if (itemMesh) {
+            itemMesh.position.copy(currentPos);
+            itemMesh.scale.set(scale, scale, scale);
+        }
+        
+        if (itemBody) {
+            itemBody.position.set(currentPos.x, currentPos.y, currentPos.z);
+            if (itemBody.quaternion) {
+                itemBody.quaternion.set(0, 0, 0, 1); // Bez rotace
+            }
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Dosáhli jsme hrudníku - odstranit item
+            if (itemBody) {
+                world.removeBody(itemBody);
+            }
+            if (itemMesh) {
+                scene.remove(itemMesh);
+            }
+            
+            // Zavolat callback po dokončení
+            if (onComplete) {
+                onComplete();
+            }
+        }
+    }
+    
+    animate();
 }
 
 // Funkce pro animaci itemu k ústům (bez efektů pilulky)
@@ -4596,8 +4734,8 @@ function startNewRound() {
         if (item.isShopItem) {
             itemsToKeep.push(item);
         } else {
-            if (item.body) world.removeBody(item.body);
-            if (item.mesh) scene.remove(item.mesh);
+        if (item.body) world.removeBody(item.body);
+        if (item.mesh) scene.remove(item.mesh);
         }
     });
     // Obnovit objectsToUpdate pouze s itemy
@@ -5417,11 +5555,11 @@ function animate() {
              currentPos.x += (mouseTargetPos.x - currentPos.x) * lerpFactor;
              currentPos.y += (mouseTargetPos.y - currentPos.y) * lerpFactor;
              currentPos.z += (mouseTargetPos.z - currentPos.z) * lerpFactor;
-        } else if (draggingObject === 'pill' && potentialPillBody) {
-            // Pro pilulku: sledování myši (podobně jako víčko)
-            currentPos.x += (mouseTargetPos.x - currentPos.x) * lerpFactor;
-            currentPos.y += (mouseTargetPos.y - currentPos.y) * lerpFactor;
-            currentPos.z += (mouseTargetPos.z - currentPos.z) * lerpFactor;
+         } else if (draggingObject === 'pill' && potentialPillBody) {
+             // Pro pilulku: sledování myši (podobně jako víčko)
+             currentPos.x += (mouseTargetPos.x - currentPos.x) * lerpFactor;
+             currentPos.y += (mouseTargetPos.y - currentPos.y) * lerpFactor;
+             currentPos.z += (mouseTargetPos.z - currentPos.z) * lerpFactor;
         } else if (draggingObject === 'injector' && injectorBody) {
             // Pro injector: sledování myši (podobně jako víčko)
             currentPos.x += (mouseTargetPos.x - currentPos.x) * lerpFactor;
@@ -5467,7 +5605,7 @@ function animate() {
             currentPos.x += (mouseTargetPos.x - currentPos.x) * lerpFactor;
             currentPos.y += (mouseTargetPos.y - currentPos.y) * lerpFactor;
             currentPos.z += (mouseTargetPos.z - currentPos.z) * lerpFactor;
-        }
+         }
     }
 
     
