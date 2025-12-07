@@ -140,6 +140,8 @@ let isDebugMode = false;
 let modelsToLoad = 15; // Celkový počet modelů/textur k načtení
 let modelsLoaded = 0;
 let isLoadingComplete = false;
+let loadingStartTime = 0; // Čas začátku načítání
+const MIN_LOADING_TIME = 1500; // Minimální doba zobrazení loading screenu (ms)
 
 // Function to update loading progress
 function updateLoadingProgress(modelName) {
@@ -168,7 +170,11 @@ function finishLoading() {
     const loadingScreen = document.getElementById('loading-screen');
     const rendererElement = renderer ? renderer.domElement : null;
     
-    // Small delay to ensure everything is ready
+    // Calculate elapsed time
+    const elapsedTime = Date.now() - loadingStartTime;
+    const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+    
+    // Wait for minimum loading time to ensure loading screen is visible
     setTimeout(() => {
         // Hide loading screen
         if (loadingScreen) {
@@ -189,17 +195,20 @@ function finishLoading() {
         if (bottleModelData && gameState === STATE.START) {
             startCoinToss();
         }
-    }, 100);
+    }, remainingTime + 100); // +100ms pro jistotu
 }
 
 // Function to start game from menu
 window.startGame = function() {
-    // Show loading screen
+    // Record loading start time
+    loadingStartTime = Date.now();
+    
+    // Show loading screen immediately
     const loadingScreen = document.getElementById('loading-screen');
     const rendererElement = renderer ? renderer.domElement : null;
     
     if (loadingScreen) {
-        loadingScreen.style.display = 'block';
+        loadingScreen.style.display = 'flex'; // Use flex instead of block for better centering
     }
     
     // Hide renderer until loading is complete
@@ -215,15 +224,18 @@ window.startGame = function() {
     if (loadingBar) loadingBar.style.width = '0%';
     if (loadingText) loadingText.textContent = 'Initializing...';
     
-    if (!window.gameInitialized) {
-        init();
-        window.gameInitialized = true;
-    }
-    if (!window.animationRunning) {
-        animate();
-        window.animationRunning = true;
-    }
-    gameState = STATE.START;
+    // Small delay to ensure loading screen is visible before starting init
+    setTimeout(() => {
+        if (!window.gameInitialized) {
+            init();
+            window.gameInitialized = true;
+        }
+        if (!window.animationRunning) {
+            animate();
+            window.animationRunning = true;
+        }
+        gameState = STATE.START;
+    }, 50);
 };
 
 // Function to reset game (for GIVE UP)
