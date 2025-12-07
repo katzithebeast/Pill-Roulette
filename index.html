@@ -1186,11 +1186,37 @@
             }
             
             // Start main menu audio when page loads
-            if (mainMenuAudio) {
-                mainMenuAudio.play().catch(err => {
-                    console.log('Audio autoplay prevented:', err);
-                });
+            // Note: Autoplay may be blocked by browser, so we'll also try on first user interaction
+            let mainMenuAudioStarted = false;
+            
+            function tryStartMainMenuAudio() {
+                if (mainMenuAudio && !mainMenuAudioStarted) {
+                    mainMenuAudio.play().then(() => {
+                        mainMenuAudioStarted = true;
+                    }).catch(err => {
+                        console.log('Audio autoplay prevented:', err);
+                        // Audio will start on first user interaction
+                    });
+                }
             }
+            
+            // Try to start immediately (may be blocked)
+            tryStartMainMenuAudio();
+            
+            // Also try to start on first user interaction (click, touch, keydown)
+            const startAudioOnInteraction = () => {
+                if (!mainMenuAudioStarted) {
+                    tryStartMainMenuAudio();
+                    // Remove listeners after first successful start
+                    document.removeEventListener('click', startAudioOnInteraction);
+                    document.removeEventListener('touchstart', startAudioOnInteraction);
+                    document.removeEventListener('keydown', startAudioOnInteraction);
+                }
+            };
+            
+            document.addEventListener('click', startAudioOnInteraction, { once: true });
+            document.addEventListener('touchstart', startAudioOnInteraction, { once: true });
+            document.addEventListener('keydown', startAudioOnInteraction, { once: true });
             
             // Function to fade out audio
             function fadeOutAudio(audioElement, duration, onComplete) {
@@ -1230,7 +1256,9 @@
                 }
                 if (mainMenuAudio) {
                     mainMenuAudio.volume = currentMusicVolume / 100; // Set music volume before playing
-                    mainMenuAudio.play().catch(err => {
+                    mainMenuAudio.play().then(() => {
+                        mainMenuAudioStarted = true;
+                    }).catch(err => {
                         console.log('Main menu audio play error:', err);
                     });
                 }
