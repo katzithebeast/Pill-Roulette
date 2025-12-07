@@ -80,6 +80,57 @@
         .toxicity-icon.filled.level-4 { color: #ff3300; }
         .toxicity-icon.filled.level-5 { color: #ff0000; }
         
+        /* Main Menu Styles */
+        .menu-btn {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 14px;
+            padding: 12px 35px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            transition: all 0.1s;
+            min-width: 250px;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(0, 50, 0, 0.95);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.6), inset 0 0 15px rgba(0, 255, 0, 0.2);
+            text-shadow: 2px 2px 0 #000, 0 0 15px rgba(0, 255, 0, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .menu-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        
+        /* CRT Scanlines Animation */
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+        
+        /* Background parallax movement (fake 3D) */
+        @keyframes bgParallax {
+            0% { background-position: 50% 50%; }
+            25% { background-position: 45% 50%; }
+            50% { background-position: 50% 50%; }
+            75% { background-position: 55% 50%; }
+            100% { background-position: 50% 50%; }
+        }
+        
+        /* CRT flicker effect */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.98; }
+        }
+        
         #player-id {
             position: absolute;
             bottom: 20px;
@@ -449,6 +500,81 @@
     <!-- Vignette efekt - zatemnění po stranách pro hororový feel -->
     <div id="vignette-overlay"></div>
     
+    <!-- Main Menu -->
+    <div id="main-menu" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 20000; pointer-events: all;">
+        <!-- Background -->
+        <div id="menu-background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('models/textures/background_menu.png'); background-size: 120% 120%; background-position: center; z-index: 1; animation: bgParallax 10s ease-in-out infinite;"></div>
+        
+        <!-- CRT efekt overlay -->
+        <div id="crt-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;">
+            <!-- Scanlines -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scanline 0.1s linear infinite;"></div>
+            <!-- Zelený tint -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 100, 0, 0.1); mix-blend-mode: multiply; pointer-events: none;"></div>
+            <!-- Vignette -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%); pointer-events: none;"></div>
+        </div>
+        
+        <!-- Menu content -->
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 60px; z-index: 2;">
+            <!-- Logo -->
+            <img id="menu-logo" src="models/textures/background_menu_icon.png" alt="Logo" style="max-width: 320px; width: 32%; height: auto; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; margin-bottom: 25px; filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));">
+            
+            <!-- Menu buttons -->
+            <div id="menu-buttons" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                <button class="menu-btn" id="main-menu-btn-1" data-action="singleplayer">SINGLEPLAYER</button>
+                <button class="menu-btn" id="main-menu-btn-2" data-action="multiplayer">MULTIPLAYER</button>
+                <button class="menu-btn" data-action="howtoplay">HOW TO PLAY</button>
+                <button class="menu-btn" data-action="options">OPTIONS</button>
+            </div>
+        </div>
+        
+        <!-- Pill icon vlevo dole -->
+        <div style="position: absolute; bottom: 20px; left: 20px; z-index: 2;">
+            <div style="width: 30px; height: 50px; background: linear-gradient(to right, #ff0000 0%, #ff0000 50%, #00ff00 50%, #00ff00 100%); border-radius: 15px; border: 2px solid #000; image-rendering: pixelated; box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);"></div>
+        </div>
+    </div>
+    
+    <!-- How to Play Overlay -->
+    <div id="how-to-play-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 25000; pointer-events: all; background: rgba(0, 0, 0, 0.95);">
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; overflow-y: auto;">
+            <div style="max-width: 800px; width: 100%; color: #00ff00; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 10px; line-height: 1.6;">
+                <h2 style="text-align: center; margin-bottom: 25px; font-size: 16px; text-shadow: 2px 2px 0 #000;">HOW TO PLAY</h2>
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 12px; margin-bottom: 8px; color: #ffff00;">CÍL HRY</h3>
+                    <p style="font-size: 10px;">Přežij co nejdéle a znič oponenta pomocí jedovatých pilulek. Každé kolo si vyber pilulku - některé jsou jedovaté, některé pomáhají. Máš 5 životů. Pokud sníš jedovatou pilulku, ztratíš 1 život. Pokud sníš normální pilulku, nic se nestane. Na konci každého kola si můžeš v shopu vybrat 2 itemy, které ti pomohou v dalších kolech.</p>
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 12px; margin-bottom: 8px; color: #ffff00;">OVLÁDÁNÍ</h3>
+                    <p style="font-size: 10px;">• Klikni a táhni lahev/pilulky/itemy pro pohyb<br>• Klikni na pilulku pro snězení<br>• Drž item a stiskni E pro použití<br>• Klikni na minci pro hod (na začátku kola)</p>
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 12px; margin-bottom: 8px; color: #ffff00;">ITEMY</h3>
+                    <p style="font-size: 10px;">• INJECTOR: Neguje 2 toxicity z příští pilulky (neskipne kolo)<br>• TESTER: Otestuj pilulku před snězením - klikni na pilulku po použití testeru (neskipne kolo)<br>• KLESTE: Přidá 1 toxicity oponentovi (neskipne kolo)<br>• ZUB: Neguje efekt kleští (neskipne kolo)<br>• CANDY: Sní se místo pilulky, přeskočí kolo<br>• BRAIN: Oponent sní vybranou pilulku (neskipne kolo)<br>• LEECH: Sníží toxicity na minimum (0) (neskipne kolo)<br>• HAMMER: Zničí vybranou pilulku (neskipne kolo)<br>• HEARTH: Přidá 1 život (max 5) (neskipne kolo)</p>
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 12px; margin-bottom: 8px; color: #ffff00;">PILULKY</h3>
+                    <p style="font-size: 10px;">• Normální pilulka: Bílá/červená - může být jedovatá nebo ne<br>• Pill tablet: Světle modrá - může být jedovatá, nebo redukuje toxicity<br>• Vitamin pill: Zelená - může být jedovatá, nebo přidává toxicity<br>• Special pill: Polovina zelená, polovina fialová - může být smrtelná, přidat 2 toxicity, nebo přidat 1 život</p>
+                </div>
+                <button class="menu-btn" data-action="back-from-howto" style="margin-top: 25px; width: 200px;">BACK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Options Overlay -->
+    <div id="options-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 25000; pointer-events: all; background: rgba(0, 0, 0, 0.95);">
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+            <div style="max-width: 600px; width: 100%; color: #00ff00; font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 12px;">
+                <h2 style="text-align: center; margin-bottom: 30px; font-size: 18px; text-shadow: 2px 2px 0 #000;">OPTIONS</h2>
+                <div style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between;">
+                    <label style="color: #00ff00;">DEVELOPER MODE:</label>
+                    <input type="checkbox" id="dev-mode-toggle" style="width: 30px; height: 30px; cursor: pointer;">
+                </div>
+                <button class="menu-btn" data-action="back-from-options" style="margin-top: 30px; width: 200px;">BACK</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Shop UI -->
     <div id="shop-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; pointer-events: all;">
         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.3);"></div>
@@ -476,5 +602,175 @@
     </script>
 
     <script type="module" src="game.js"></script>
+    
+    <script>
+        // Main Menu Logic
+        let isDevModeEnabled = false;
+        
+        // Menu button handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuButtons = document.querySelectorAll('.menu-btn');
+            const mainMenu = document.getElementById('main-menu');
+            const howToPlayOverlay = document.getElementById('how-to-play-overlay');
+            const optionsOverlay = document.getElementById('options-overlay');
+            const devModeToggle = document.getElementById('dev-mode-toggle');
+            const spawnControls = document.querySelector('#spawn-item-select')?.parentElement;
+            
+            // Check if dev mode was saved
+            const savedDevMode = localStorage.getItem('devMode');
+            if (savedDevMode === 'true') {
+                isDevModeEnabled = true;
+                if (devModeToggle) devModeToggle.checked = true;
+            }
+            updateDevModeVisibility();
+            
+            const mainMenuBtn1 = document.getElementById('main-menu-btn-1');
+            const mainMenuBtn2 = document.getElementById('main-menu-btn-2');
+            let isGamePaused = false;
+            
+            // Function to update menu buttons based on game state
+            function updateMenuButtons() {
+                if (isGamePaused) {
+                    // Game is paused - show RESUME and GIVE UP
+                    if (mainMenuBtn1) {
+                        mainMenuBtn1.textContent = 'RESUME';
+                        mainMenuBtn1.setAttribute('data-action', 'resume');
+                    }
+                    if (mainMenuBtn2) {
+                        mainMenuBtn2.textContent = 'GIVE UP';
+                        mainMenuBtn2.setAttribute('data-action', 'giveup');
+                    }
+                } else {
+                    // Main menu - show SINGLEPLAYER and MULTIPLAYER
+                    if (mainMenuBtn1) {
+                        mainMenuBtn1.textContent = 'SINGLEPLAYER';
+                        mainMenuBtn1.setAttribute('data-action', 'singleplayer');
+                    }
+                    if (mainMenuBtn2) {
+                        mainMenuBtn2.textContent = 'MULTIPLAYER';
+                        mainMenuBtn2.setAttribute('data-action', 'multiplayer');
+                    }
+                }
+            }
+            
+            // Function to resume game
+            function resumeGame() {
+                isGamePaused = false;
+                mainMenu.style.display = 'none';
+                updateMenuButtons();
+            }
+            
+            // Function to give up (reset game)
+            function giveUp() {
+                if (confirm('Are you sure you want to give up? This will end your current run.')) {
+                    // Refresh page to reset everything
+                    window.location.reload();
+                }
+            }
+            
+            // ESC key handler for pause menu
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    // If game is running and menu is hidden, show pause menu
+                    if (window.gameInitialized && mainMenu.style.display === 'none') {
+                        isGamePaused = true;
+                        updateMenuButtons();
+                        mainMenu.style.display = 'block';
+                    }
+                    // If menu is visible and game is paused, resume
+                    else if (isGamePaused && mainMenu.style.display !== 'none') {
+                        resumeGame();
+                    }
+                }
+            });
+            
+            // Expose functions globally
+            window.resumeGame = resumeGame;
+            window.giveUp = giveUp;
+            window.updateMenuButtons = updateMenuButtons;
+            window.isGamePaused = () => isGamePaused;
+            window.setGamePaused = (paused) => { isGamePaused = paused; };
+            
+            menuButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = btn.getAttribute('data-action');
+                    
+                    switch(action) {
+                        case 'singleplayer':
+                            mainMenu.style.display = 'none';
+                            isGamePaused = false;
+                            // Start game
+                            if (window.startGame) {
+                                window.startGame();
+                            }
+                            break;
+                        case 'resume':
+                            resumeGame();
+                            break;
+                        case 'giveup':
+                            giveUp();
+                            break;
+                        case 'multiplayer':
+                            // Placeholder for future multiplayer
+                            alert('MULTIPLAYER - Coming soon!');
+                            break;
+                        case 'howtoplay':
+                            howToPlayOverlay.style.display = 'block';
+                            break;
+                        case 'options':
+                            optionsOverlay.style.display = 'block';
+                            break;
+                        case 'back-from-howto':
+                            howToPlayOverlay.style.display = 'none';
+                            break;
+                        case 'back-from-options':
+                            optionsOverlay.style.display = 'none';
+                            break;
+                    }
+                });
+            });
+            
+            // Dev mode toggle
+            if (devModeToggle) {
+                devModeToggle.addEventListener('change', (e) => {
+                    isDevModeEnabled = e.target.checked;
+                    localStorage.setItem('devMode', isDevModeEnabled);
+                    updateDevModeVisibility();
+                });
+            }
+            
+            function updateDevModeVisibility() {
+                if (spawnControls) {
+                    spawnControls.style.display = isDevModeEnabled ? 'flex' : 'none';
+                }
+                // Also update debug panel if it exists
+                const debugPanel = document.getElementById('debug-panel');
+                const debugToggle = document.getElementById('debug-toggle');
+                if (debugPanel && debugToggle) {
+                    if (!isDevModeEnabled) {
+                        debugPanel.style.display = 'none';
+                        debugToggle.style.display = 'none';
+                    } else {
+                        debugToggle.style.display = 'block';
+                    }
+                }
+            }
+            
+            // Hide game UI initially
+            const gameUI = document.getElementById('ui-container');
+            const pillStats = document.getElementById('pill-stats');
+            const playerId = document.getElementById('player-id');
+            if (gameUI) gameUI.style.display = 'none';
+            if (pillStats) pillStats.style.display = 'none';
+            if (playerId) playerId.style.display = 'none';
+            
+            // Show game UI when starting
+            window.showGameUI = function() {
+                if (gameUI) gameUI.style.display = 'flex';
+                if (pillStats) pillStats.style.display = 'block';
+                if (playerId) playerId.style.display = 'block';
+            };
+        });
+    </script>
 </body>
 </html>

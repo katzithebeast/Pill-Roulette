@@ -132,8 +132,99 @@ let bottleCapScale = 1.0; // Měřítko lahve a víčka (zmenšeno o třetinu z 
 let tableDebugRotationX = 0.0; // Debug rotace stolu kolem X osy (pro obě poloviny)
 let isDebugMode = false;
 
-init();
-animate();
+// Don't start game immediately - wait for menu
+// init();
+// animate();
+
+// Function to start game from menu
+window.startGame = function() {
+    if (!window.gameInitialized) {
+        init();
+        window.gameInitialized = true;
+    }
+    if (!window.animationRunning) {
+        animate();
+        window.animationRunning = true;
+    }
+    gameState = STATE.START;
+    
+    // Show game UI
+    if (window.showGameUI) {
+        window.showGameUI();
+    }
+};
+
+// Function to reset game (for GIVE UP)
+window.resetGame = function() {
+    // Reset game state
+    gameState = STATE.START;
+    playerHP = 5;
+    enemyHP = 5;
+    playerToxicity = 0;
+    enemyToxicity = 0;
+    isBottleOpen = false;
+    roundNumber = 1;
+    
+    // Reset item states
+    injectorToxicityReduction = 0;
+    isTesterActive = false;
+    testedPill = null;
+    pliersToxicityAdded = 0;
+    isBrainActive = false;
+    isCandyActive = false;
+    isHammerActive = false;
+    isHearthActive = false;
+    
+    // Clear items
+    playerItems.length = 0;
+    enemyItems.length = 0;
+    
+    // Remove all objects from scene
+    if (objectsToUpdate) {
+        objectsToUpdate.forEach(obj => {
+            if (obj.mesh) {
+                scene.remove(obj.mesh);
+            }
+            if (obj.body) {
+                world.removeBody(obj.body);
+            }
+        });
+        objectsToUpdate.length = 0;
+    }
+    
+    // Remove bottle and cap if they exist
+    if (bottleGroup) {
+        scene.remove(bottleGroup);
+        bottleGroup = null;
+    }
+    if (bottleBody) {
+        world.removeBody(bottleBody);
+        bottleBody = null;
+    }
+    if (capMesh) {
+        scene.remove(capMesh);
+        capMesh = null;
+    }
+    if (capBody) {
+        world.removeBody(capBody);
+        capBody = null;
+    }
+    
+    // Remove coin if exists
+    if (coinMesh) {
+        scene.remove(coinMesh);
+        coinMesh = null;
+    }
+    if (coinBody) {
+        world.removeBody(coinBody);
+        coinBody = null;
+    }
+    
+    // Update UI
+    if (window.updateUI) {
+        updateUI();
+    }
+};
 
 // Inicializovat debug mód po načtení DOMu
 setTimeout(() => {
